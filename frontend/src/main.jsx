@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 
-const API = "http://localhost:8000";
+const API = "https://knu-meeting-scheduler.onrender.com";
 const DAYS = [
   ["MON", "월"],
   ["TUE", "화"],
