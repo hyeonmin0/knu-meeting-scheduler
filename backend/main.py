@@ -288,7 +288,7 @@ def save_user_times(share_code: str, data: TimeSlotInput):
 
     for slot in data.slots:
         cur.execute(
-            "INSERT INTO time_slots(meeting_id, user_id, slot) VALUES (?, ?, ?)",
+            "INSERT OR IGNORE INTO time_slots(meeting_id, user_id, slot) VALUES (?, ?, ?)",
             (meeting["id"], user_id, slot),
         )
 
