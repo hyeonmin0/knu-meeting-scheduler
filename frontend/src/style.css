@@ -142,3 +142,28 @@ pre {
   padding: 14px 18px;
   border-radius: 10px;
 }
+.date-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+
+.date-button {
+  padding: 8px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+}
+
+.date-button.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.notice {
+  color: #666;
+  margin: 16px 0;
+}
