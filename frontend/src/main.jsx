@@ -3,19 +3,29 @@ import { createRoot } from "react-dom/client";
 import "./style.css";
 
 const API = "https://knu-meeting-scheduler.onrender.com";
-const DAYS = [
-  ["MON", "월"],
-  ["TUE", "화"],
-  ["WED", "수"],
-  ["THU", "목"],
-  ["FRI", "금"],
-];
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
+function getDaysInMonth(year, month) {
+  const lastDay = new Date(year, month, 0).getDate();
+  const days = [];
+
+  for (let day = 1; day <= lastDay; day++) {
+    const date = new Date(year, month - 1, day);
+    const weekday = WEEKDAYS[date.getDay()];
+
+    const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const label = `${month}/${day}(${weekday})`;
+
+    days.push([dateKey, label]);
+  }
+
+  return days;
+}
 // 09:00부터 21:00까지 30분 단위 시간 생성
 const TIMES = [];
-for (let h = 9; h <= 21; h++) {
+for (let h = 9; h <= 24; h++) {
   TIMES.push(`${String(h).padStart(2, "0")}:00`);
-  if (h !== 21) TIMES.push(`${String(h).padStart(2, "0")}:30`);
+  if (h !== 24) TIMES.push(`${String(h).padStart(2, "0")}:30`);
 }
 
 function App() {
@@ -30,6 +40,9 @@ function App() {
   const [commonResult, setCommonResult] = useState(null);
   const [places, setPlaces] = useState([]);
   const [message, setMessage] = useState("");
+  const [selectedYear, setSelectedYear] = useState(2026);
+const [selectedMonth, setSelectedMonth] = useState(6);
+const DAYS = getDaysInMonth(selectedYear, selectedMonth);
 
   // 약속 생성
   async function createMeeting() {
@@ -109,24 +122,42 @@ function App() {
 
       <section className="card">
         <h2>1. 약속 생성</h2>
-        <div className="form-row">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="약속명" />
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="meal">밥약속</option>
-            <option value="drink">술약속</option>
-            <option value="study">스터디</option>
-            <option value="team">팀 프로젝트</option>
-            <option value="mentoring">멘토링</option>
-          </select>
-          <input type="number" value={maxPeople} onChange={(e) => setMaxPeople(e.target.value)} />
-          <button onClick={createMeeting}>약속 생성</button>
-        </div>
-        {meeting && (
-          <div className="notice">
-            생성된 공유 코드: <b>{shareCode}</b>
-          </div>
-        )}
-      </section>
+
+<input
+  value={title}
+  onChange={(e) => setTitle(e.target.value)}
+  placeholder="약속명"
+/>
+
+<select value={category} onChange={(e) => setCategory(e.target.value)}>
+  <option value="team">팀 프로젝트</option>
+  <option value="meal">밥약속</option>
+  <option value="drink">술약속</option>
+  <option value="study">스터디</option>
+</select>
+
+<input
+  type="number"
+  value={maxPeople}
+  onChange={(e) => setMaxPeople(Number(e.target.value))}
+  placeholder="인원 수"
+/>
+
+<select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+  <option value={2026}>2026년</option>
+  <option value={2027}>2027년</option>
+  <option value={2028}>2028년</option>
+</select>
+
+<select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
+  {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+    <option key={month} value={month}>
+      {month}월
+    </option>
+  ))}
+</select>
+
+<button onClick={createMeeting}>약속 생성</button>
 
       <section className="card">
         <h2>2. 공유 코드로 약속 참여</h2>
