@@ -1,104 +1,125 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f5f6fa;
-  color: #222;
+  font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+  background: #f4f7fb;
+  color: #1f2937;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+  font-size: 14px;
+}
+
+button {
+  cursor: pointer;
 }
 
 .page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 32px 20px;
+  padding: 32px 20px 60px;
 }
 
 header {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: white;
+  padding: 36px 32px;
+  border-radius: 24px;
   margin-bottom: 24px;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.25);
 }
 
 header h1 {
-  margin-bottom: 8px;
+  margin: 0 0 10px;
+  font-size: 32px;
+}
+
+header p {
+  margin: 0;
+  line-height: 1.6;
+  opacity: 0.95;
 }
 
 .card {
   background: white;
-  border-radius: 16px;
-  padding: 22px;
+  border-radius: 20px;
+  padding: 24px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-size: 22px;
+  color: #111827;
+}
+
+.card h3 {
+  margin-top: 22px;
+  margin-bottom: 12px;
+  color: #374151;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  background: white;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: #2563eb;
+  color: white;
+  font-weight: 700;
+  transition: 0.15s;
+}
+
+button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
 }
 
 .form-row {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
   align-items: center;
+  flex-wrap: wrap;
 }
 
-input, select, button {
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
+.form-row input,
+.form-row select {
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0;
 }
 
-button {
-  background: #1f6feb;
-  color: white;
-  cursor: pointer;
-  border: none;
-}
-
-button:hover {
-  opacity: 0.9;
-}
-
-.notice {
-  margin-top: 12px;
-  padding: 12px;
-  background: #eef5ff;
-  border-radius: 8px;
+.form-row button {
+  white-space: nowrap;
 }
 
 .name-input {
   margin-bottom: 12px;
-  width: 220px;
-}
-
-.timetable {
-  display: grid;
-  grid-template-columns: 80px repeat(5, 1fr);
-  gap: 4px;
-  margin-top: 10px;
-}
-
-.cell {
-  min-height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.head {
-  background: #222;
-  color: white;
-  font-weight: bold;
-}
-
-.time {
-  background: #f0f0f0;
-}
-
-.slot {
-  background: #edf0f7;
-  color: #222;
-}
-
-.slot.active {
-  background: #2ea043;
-  color: white;
-  font-weight: bold;
 }
 
 .wide {
@@ -106,64 +127,160 @@ button:hover {
   margin-top: 14px;
 }
 
-pre {
-  background: #111;
-  color: #eee;
-  padding: 14px;
-  border-radius: 10px;
-  overflow-x: auto;
-}
-
-.place-list {
+/* 가능 시간 선택 버튼 목록 */
+.time-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-.place {
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.place span {
-  display: block;
-  margin-top: 4px;
-  color: #666;
-  font-size: 13px;
-}
-
-.toast {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  background: #222;
-  color: white;
-  padding: 14px 18px;
-  border-radius: 10px;
-}
-.date-list {
-  display: flex;
-  flex-wrap: wrap;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
   gap: 8px;
-  margin: 12px 0 20px;
+  margin: 16px 0;
 }
 
-.date-button {
-  padding: 8px 12px;
+.time-button {
+  padding: 10px 8px;
   border: 1px solid #d0d7de;
-  border-radius: 8px;
+  border-radius: 10px;
   background: white;
-  cursor: pointer;
+  color: #374151;
+  font-weight: 600;
 }
 
-.date-button.active {
+.time-button:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  transform: none;
+}
+
+.time-button.active {
   background: #2563eb;
   color: white;
   border-color: #2563eb;
 }
 
-.notice {
-  color: #666;
-  margin: 16px 0;
+/* 예전 시간표 구조가 남아 있어도 깨지지 않게 유지 */
+.timetable {
+  display: grid;
+  grid-template-columns: 80px repeat(5, 1fr);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: auto;
+  margin-top: 16px;
+}
+
+.cell {
+  min-height: 38px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.cell.head {
+  background: #eff6ff;
+  font-weight: 700;
+}
+
+.cell.time {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.cell.slot {
+  border-radius: 0;
+  color: #2563eb;
+  background: white;
+  padding: 0;
+}
+
+.cell.slot.active {
+  background: #2563eb;
+  color: white;
+}
+
+pre {
+  background: #0f172a;
+  color: #e5e7eb;
+  padding: 16px;
+  border-radius: 14px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.place-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.place {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.place b {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.place span {
+  display: inline-block;
+  color: #2563eb;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.place p {
+  margin: 0;
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: #111827;
+  color: white;
+  padding: 14px 18px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  z-index: 100;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 20px 12px 48px;
+  }
+
+  header {
+    padding: 28px 22px;
+  }
+
+  header h1 {
+    font-size: 25px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .form-row input,
+  .form-row select,
+  .form-row button {
+    width: 100%;
+  }
+
+  .time-list {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  }
 }

@@ -3,25 +3,6 @@ import { createRoot } from "react-dom/client";
 import "./style.css";
 
 const API = "https://knu-meeting-scheduler.onrender.com";
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-
-// 선택한 연도/월에 맞는 날짜 목록 생성
-function getDaysInMonth(year, month) {
-  const lastDay = new Date(year, month, 0).getDate();
-  const days = [];
-
-  for (let day = 1; day <= lastDay; day++) {
-    const date = new Date(year, month - 1, day);
-    const weekday = WEEKDAYS[date.getDay()];
-
-    const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const label = `${month}/${day}(${weekday})`;
-
-    days.push([dateKey, label]);
-  }
-
-  return days;
-}
 
 // 09:00부터 24:00까지 30분 단위 시간 생성
 const TIMES = [];
@@ -37,39 +18,30 @@ function App() {
   const [category, setCategory] = useState("team");
   const [maxPeople, setMaxPeople] = useState(4);
 
-  const [selectedYear, setSelectedYear] = useState(2026);
-  const [selectedMonth, setSelectedMonth] = useState(6);
-  const [selectedDates, setSelectedDates] = useState([]);
-
   const [meeting, setMeeting] = useState(null);
   const [shareCode, setShareCode] = useState("");
   const [userName, setUserName] = useState("");
+
+  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedMonth, setSelectedMonth] = useState(6);
+  const [selectedDay, setSelectedDay] = useState(1);
+
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [allTimes, setAllTimes] = useState({});
   const [commonResult, setCommonResult] = useState(null);
   const [places, setPlaces] = useState([]);
   const [message, setMessage] = useState("");
 
-  const monthDays = getDaysInMonth(selectedYear, selectedMonth);
+  const daysInSelectedMonth = new Date(
+    selectedYear,
+    selectedMonth,
+    0
+  ).getDate();
 
-  // 후보 날짜 선택/해제
-  function toggleDate(dateKey) {
-    setSelectedDates((prev) =>
-      prev.includes(dateKey)
-        ? prev.filter((d) => d !== dateKey)
-        : [...prev, dateKey]
-    );
-
-    // 날짜를 해제하면 그 날짜의 시간 선택도 같이 삭제
-    setSelectedSlots((prev) =>
-      prev.filter((slot) => !slot.startsWith(`${dateKey}-`))
-    );
-  }
-
-  // 선택된 날짜만 시간표에 표시
-  const displayDays = monthDays.filter(([dateKey]) =>
-    selectedDates.includes(dateKey)
-  );
+  const selectedDate = `${selectedYear}-${String(selectedMonth).padStart(
+    2,
+    "0"
+  )}-${String(selectedDay).padStart(2, "0")}`;
 
   // 약속 생성
   async function createMeeting() {
@@ -99,7 +71,7 @@ function App() {
     setMessage("약속 정보를 불러왔습니다.");
   }
 
-  // 시간 칸 선택/해제
+  // 시간 선택/해제
   function toggleSlot(slot) {
     setSelectedSlots((prev) =>
       prev.includes(slot)
@@ -172,13 +144,30 @@ function App() {
     setPlaces(data);
   }
 
+  // 연도/월/일 변경 시 기존 선택 시간 초기화
+  function changeYear(value) {
+    setSelectedYear(value);
+    setSelectedSlots([]);
+  }
+
+  function changeMonth(value) {
+    setSelectedMonth(value);
+    setSelectedDay(1);
+    setSelectedSlots([]);
+  }
+
+  function changeDay(value) {
+    setSelectedDay(value);
+    setSelectedSlots([]);
+  }
+
   return (
     <div className="page">
       <header>
         <h1>경북대 약속 시간 조율 서비스</h1>
         <p>
-          후보 날짜와 가능 시간을 입력하면 참여자들의 공통 가능 시간을 계산하고
-          장소를 추천합니다.
+          참여자별 가능 시간을 입력하면 공통 시간을 자동으로 계산하고 장소를
+          추천합니다.
         </p>
       </header>
 
@@ -205,54 +194,14 @@ function App() {
           placeholder="인원 수"
         />
 
-        <div className="form-row">
-          <select
-            value={selectedYear}
-            onChange={(e) => {
-              setSelectedYear(Number(e.target.value));
-              setSelectedDates([]);
-              setSelectedSlots([]);
-            }}
-          >
-            <option value={2026}>2026년</option>
-            <option value={2027}>2027년</option>
-            <option value={2028}>2028년</option>
-          </select>
-
-          <select
-            value={selectedMonth}
-            onChange={(e) => {
-              setSelectedMonth(Number(e.target.value));
-              setSelectedDates([]);
-              setSelectedSlots([]);
-            }}
-          >
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-              <option key={month} value={month}>
-                {month}월
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <h3>후보 날짜 선택</h3>
-        <div className="date-list">
-          {monthDays.map(([dateKey, label]) => (
-            <button
-              key={dateKey}
-              className={
-                selectedDates.includes(dateKey)
-                  ? "date-button active"
-                  : "date-button"
-              }
-              onClick={() => toggleDate(dateKey)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
         <button onClick={createMeeting}>약속 생성</button>
+
+        {meeting && (
+          <p>
+            생성된 약속: <b>{meeting.title}</b> / 공유 코드:{" "}
+            <b>{shareCode}</b>
+          </p>
+        )}
       </section>
 
       <section className="card">
@@ -269,8 +218,7 @@ function App() {
 
         {meeting && (
           <p>
-            현재 약속: <b>{meeting.title}</b> / 공유 코드:{" "}
-            <b>{shareCode}</b>
+            현재 약속: <b>{meeting.title}</b>
           </p>
         )}
       </section>
@@ -285,40 +233,61 @@ function App() {
           placeholder="참여자 이름"
         />
 
-        {displayDays.length === 0 ? (
-          <p className="notice">먼저 후보 날짜를 선택해주세요.</p>
-        ) : (
-          <div className="timetable">
-            <div className="cell head">시간</div>
+        <div className="form-row">
+          <select
+            value={selectedYear}
+            onChange={(e) => changeYear(Number(e.target.value))}
+          >
+            <option value={2026}>2026년</option>
+            <option value={2027}>2027년</option>
+            <option value={2028}>2028년</option>
+          </select>
 
-            {displayDays.map(([dateKey, label]) => (
-              <div className="cell head" key={dateKey}>
-                {label}
-              </div>
+          <select
+            value={selectedMonth}
+            onChange={(e) => changeMonth(Number(e.target.value))}
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+              <option key={month} value={month}>
+                {month}월
+              </option>
             ))}
+          </select>
 
-            {TIMES.map((time) => (
-              <React.Fragment key={time}>
-                <div className="cell time">{time}</div>
+          <select
+            value={selectedDay}
+            onChange={(e) => changeDay(Number(e.target.value))}
+          >
+            {Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1).map(
+              (day) => (
+                <option key={day} value={day}>
+                  {day}일
+                </option>
+              )
+            )}
+          </select>
+        </div>
 
-                {displayDays.map(([dateKey]) => {
-                  const slot = `${dateKey}-${time}`;
-                  const active = selectedSlots.includes(slot);
+        <p>
+          선택한 날짜: <b>{selectedDate}</b>
+        </p>
 
-                  return (
-                    <button
-                      key={slot}
-                      className={active ? "cell slot active" : "cell slot"}
-                      onClick={() => toggleSlot(slot)}
-                    >
-                      {active ? "가능" : ""}
-                    </button>
-                  );
-                })}
-              </React.Fragment>
-            ))}
-          </div>
-        )}
+        <div className="time-list">
+          {TIMES.map((time) => {
+            const slot = `${selectedDate}-${time}`;
+            const active = selectedSlots.includes(slot);
+
+            return (
+              <button
+                key={slot}
+                className={active ? "time-button active" : "time-button"}
+                onClick={() => toggleSlot(slot)}
+              >
+                {time}
+              </button>
+            );
+          })}
+        </div>
 
         <button className="wide" onClick={saveTimes}>
           내 시간 저장
