@@ -41,8 +41,8 @@ function App() {
   const [places, setPlaces] = useState([]);
   const [message, setMessage] = useState("");
   const [selectedYear, setSelectedYear] = useState(2026);
-const [selectedMonth, setSelectedMonth] = useState(6);
-const DAYS = getDaysInMonth(selectedYear, selectedMonth);
+  const [selectedMonth, setSelectedMonth] = useState(6);
+  const DAYS = getDaysInMonth(selectedYear, selectedMonth);
 
   // 약속 생성
   async function createMeeting() {
@@ -158,6 +158,7 @@ const DAYS = getDaysInMonth(selectedYear, selectedMonth);
 </select>
 
 <button onClick={createMeeting}>약속 생성</button>
+      </section>
 
       <section className="card">
         <h2>2. 공유 코드로 약속 참여</h2>
