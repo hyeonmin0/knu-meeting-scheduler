@@ -38,10 +38,12 @@ function App() {
     0
   ).getDate();
 
-  const selectedDate = `${selectedYear}-${String(selectedMonth).padStart(
+    const selectedDate = `${selectedYear}-${String(selectedMonth).padStart(
     2,
     "0"
   )}-${String(selectedDay).padStart(2, "0")}`;
+
+  const selectedDateLabel = `${selectedYear}년 ${selectedMonth}월 ${selectedDay}일`;
 
   // 약속 생성
   async function createMeeting() {
@@ -274,7 +276,7 @@ function App() {
 
         <div className="time-list">
           {TIMES.map((time) => {
-            const slot = `${selectedDate}-${time}`;
+            const slot = `${selectedDate}|${time}`;
             const active = selectedSlots.includes(slot);
 
             return (
@@ -312,7 +314,7 @@ function App() {
             <ul>
               {commonResult.recommended_times.map((item) => (
                 <li key={item.slot}>
-                  {item.slot} - 가능 인원 {item.score}
+                  {item.slot.replace("|", " ")} - 가능 인원 {item.score}
                 </li>
               ))}
             </ul>
