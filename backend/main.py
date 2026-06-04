@@ -4,17 +4,17 @@
 
 주요 기능
 1. 약속 생성
-2. 공유 링크로 약속 조회
-3. 사용자별 시간표 저장/조회
+2. 공유 코드로 약속 조회
+3. 사용자별 시간 저장/조회
 4. 공통 가능 시간 계산
-5. 추천 시간 반환
+5. 추천 시간 TOP 5 반환
 6. 약속 목적별 장소 추천
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import List, Dict
 import sqlite3
 import uuid
 from pathlib import Path
@@ -23,7 +23,6 @@ DB_PATH = Path(__file__).parent / "meeting.db"
 
 app = FastAPI(title="KNU Meeting Scheduler API")
 
-# React 프론트엔드와 통신하기 위해 CORS 허용
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,7 +38,7 @@ app.add_middleware(
 
 class MeetingCreate(BaseModel):
     title: str = Field(..., min_length=1, description="약속 이름")
-    category: str = Field(..., description="약속 목적: meal, drink, study, team, mentoring")
+    category: str = Field(..., description="약속 목적")
     max_people: int = Field(..., ge=1, description="참여 인원 수")
 
 
@@ -54,7 +53,7 @@ class MeetingResponse(BaseModel):
 
 class TimeSlotInput(BaseModel):
     user_name: str = Field(..., min_length=1)
-    # 예: ["MON-09:00", "MON-09:30", "TUE-13:00"]
+    # 예: ["2026-06-04|09:00", "2026-06-04|09:30", "2026-06-05|14:00"]
     slots: List[str]
 
 
@@ -79,7 +78,6 @@ def init_db():
     conn = get_conn()
     cur = conn.cursor()
 
-    # 약속 정보 테이블
     cur.execute("""
     CREATE TABLE IF NOT EXISTS meetings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,7 +88,6 @@ def init_db():
     )
     """)
 
-    # 참여자 테이블
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -101,8 +98,6 @@ def init_db():
     )
     """)
 
-    # 시간 데이터 테이블
-    # 한 행은 한 사용자가 선택한 30분 단위 시간 하나를 의미함
     cur.execute("""
     CREATE TABLE IF NOT EXISTS time_slots (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,7 +110,6 @@ def init_db():
     )
     """)
 
-    # 장소 데이터 테이블
     cur.execute("""
     CREATE TABLE IF NOT EXISTS places (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -126,7 +120,6 @@ def init_db():
     )
     """)
 
-    # 기본 장소 데이터가 없으면 삽입
     cur.execute("SELECT COUNT(*) AS count FROM places")
     if cur.fetchone()["count"] == 0:
         default_places = [
@@ -145,6 +138,7 @@ def init_db():
             ("카페 공대점", "team", "도보 3분", "팀플 회의와 노트북 작업에 적합"),
             ("복현동 조용한 카페", "mentoring", "도보 6분", "멘토링처럼 대화 중심 약속에 적합"),
         ]
+
         cur.executemany(
             "INSERT INTO places(name, category, distance, description) VALUES (?, ?, ?, ?)",
             default_places,
@@ -174,30 +168,57 @@ def find_meeting_by_code(share_code: str):
 
 def get_or_create_user(conn, meeting_id: int, user_name: str) -> int:
     cur = conn.cursor()
+
     cur.execute(
         "INSERT OR IGNORE INTO users(meeting_id, user_name) VALUES (?, ?)",
         (meeting_id, user_name),
     )
+
     cur.execute(
         "SELECT id FROM users WHERE meeting_id = ? AND user_name = ?",
         (meeting_id, user_name),
     )
+
     return cur.fetchone()["id"]
 
 
 def validate_slot(slot: str):
-    # 간단한 형식 검증: MON-09:00 형태인지 확인
-    days = {"MON", "TUE", "WED", "THU", "FRI"}
+    """
+    시간 데이터 형식 검증
+    허용 형식: 2026-06-04|09:00
+    """
     try:
-        day, time = slot.split("-")
-        hour, minute = time.split(":")
-        hour = int(hour)
-        minute = int(minute)
+        date_part, time_part = slot.split("|")
+
+        year_str, month_str, day_str = date_part.split("-")
+        hour_str, minute_str = time_part.split(":")
+
+        year = int(year_str)
+        month = int(month_str)
+        day = int(day_str)
+        hour = int(hour_str)
+        minute = int(minute_str)
+
     except ValueError:
         raise HTTPException(status_code=400, detail=f"시간 형식 오류: {slot}")
 
-    if day not in days or hour < 0 or hour > 23 or minute not in (0, 30):
-        raise HTTPException(status_code=400, detail=f"지원하지 않는 시간 데이터: {slot}")
+    if year < 2026 or year > 2028:
+        raise HTTPException(status_code=400, detail=f"지원하지 않는 연도입니다: {slot}")
+
+    if month < 1 or month > 12:
+        raise HTTPException(status_code=400, detail=f"지원하지 않는 월입니다: {slot}")
+
+    if day < 1 or day > 31:
+        raise HTTPException(status_code=400, detail=f"지원하지 않는 날짜입니다: {slot}")
+
+    if hour < 9 or hour > 24:
+        raise HTTPException(status_code=400, detail=f"지원하지 않는 시간입니다: {slot}")
+
+    if minute not in (0, 30):
+        raise HTTPException(status_code=400, detail=f"지원하지 않는 분 단위입니다: {slot}")
+
+    if hour == 24 and minute != 0:
+        raise HTTPException(status_code=400, detail=f"24시는 00분만 가능합니다: {slot}")
 
 
 # =============================
@@ -211,15 +232,16 @@ def root():
 
 @app.post("/meetings", response_model=MeetingResponse)
 def create_meeting(data: MeetingCreate):
-    """약속 생성 API"""
     share_code = uuid.uuid4().hex[:8]
 
     conn = get_conn()
     cur = conn.cursor()
+
     cur.execute(
         "INSERT INTO meetings(title, category, max_people, share_code) VALUES (?, ?, ?, ?)",
         (data.title, data.category, data.max_people, share_code),
     )
+
     conn.commit()
     meeting_id = cur.lastrowid
     conn.close()
@@ -236,8 +258,8 @@ def create_meeting(data: MeetingCreate):
 
 @app.get("/meetings/{share_code}")
 def get_meeting(share_code: str):
-    """공유 코드로 약속 정보 조회"""
     meeting = find_meeting_by_code(share_code)
+
     if not meeting:
         raise HTTPException(status_code=404, detail="약속을 찾을 수 없습니다.")
 
@@ -246,8 +268,8 @@ def get_meeting(share_code: str):
 
 @app.post("/meetings/{share_code}/times")
 def save_user_times(share_code: str, data: TimeSlotInput):
-    """사용자별 가능 시간 저장 API"""
     meeting = find_meeting_by_code(share_code)
+
     if not meeting:
         raise HTTPException(status_code=404, detail="약속을 찾을 수 없습니다.")
 
@@ -259,7 +281,6 @@ def save_user_times(share_code: str, data: TimeSlotInput):
 
     user_id = get_or_create_user(conn, meeting["id"], data.user_name)
 
-    # 기존 시간 데이터를 지운 뒤 새로 저장하여 수정 기능처럼 동작시킴
     cur.execute(
         "DELETE FROM time_slots WHERE meeting_id = ? AND user_id = ?",
         (meeting["id"], user_id),
@@ -283,13 +304,14 @@ def save_user_times(share_code: str, data: TimeSlotInput):
 
 @app.get("/meetings/{share_code}/times")
 def get_all_times(share_code: str):
-    """약속에 참여한 사용자들의 시간 데이터 전체 조회"""
     meeting = find_meeting_by_code(share_code)
+
     if not meeting:
         raise HTTPException(status_code=404, detail="약속을 찾을 수 없습니다.")
 
     conn = get_conn()
     cur = conn.cursor()
+
     cur.execute("""
         SELECT u.user_name, t.slot
         FROM time_slots t
@@ -297,10 +319,12 @@ def get_all_times(share_code: str):
         WHERE t.meeting_id = ?
         ORDER BY u.user_name, t.slot
     """, (meeting["id"],))
+
     rows = cur.fetchall()
     conn.close()
 
     result: Dict[str, List[str]] = {}
+
     for row in rows:
         result.setdefault(row["user_name"], []).append(row["slot"])
 
@@ -309,13 +333,14 @@ def get_all_times(share_code: str):
 
 @app.get("/meetings/{share_code}/common-times")
 def calculate_common_times(share_code: str):
-    """공통 가능한 시간 계산 API"""
     meeting = find_meeting_by_code(share_code)
+
     if not meeting:
         raise HTTPException(status_code=404, detail="약속을 찾을 수 없습니다.")
 
     conn = get_conn()
     cur = conn.cursor()
+
     cur.execute("""
         SELECT slot, COUNT(*) AS available_count
         FROM time_slots
@@ -323,9 +348,14 @@ def calculate_common_times(share_code: str):
         GROUP BY slot
         ORDER BY available_count DESC, slot ASC
     """, (meeting["id"],))
+
     rows = cur.fetchall()
 
-    cur.execute("SELECT COUNT(*) AS user_count FROM users WHERE meeting_id = ?", (meeting["id"],))
+    cur.execute(
+        "SELECT COUNT(*) AS user_count FROM users WHERE meeting_id = ?",
+        (meeting["id"],),
+    )
+
     user_count = cur.fetchone()["user_count"]
     conn.close()
 
@@ -333,14 +363,20 @@ def calculate_common_times(share_code: str):
     recommended_times = []
 
     for row in rows:
+        slot = row["slot"]
+        available_count = row["available_count"]
+
         item = {
-            "slot": row["slot"],
-            "available_count": row["available_count"],
+            "slot": slot,
+            "display_slot": slot.replace("|", " "),
+            "available_count": available_count,
             "total_users": user_count,
-            "score": f"{row['available_count']}/{user_count}",
+            "score": f"{available_count}/{user_count}",
         }
-        if row["available_count"] == user_count and user_count > 0:
+
+        if available_count == user_count and user_count > 0:
             common_times.append(item)
+
         recommended_times.append(item)
 
     return {
@@ -352,14 +388,13 @@ def calculate_common_times(share_code: str):
 
 @app.get("/meetings/{share_code}/places", response_model=List[PlaceResponse])
 def recommend_places(share_code: str):
-    """약속 카테고리에 맞는 장소 추천 API"""
     meeting = find_meeting_by_code(share_code)
+
     if not meeting:
         raise HTTPException(status_code=404, detail="약속을 찾을 수 없습니다.")
 
     category = meeting["category"]
 
-    # 팀플과 멘토링은 카페/스터디 공간도 함께 추천되도록 보완
     category_map = {
         "meal": ["meal"],
         "drink": ["drink"],
@@ -367,15 +402,23 @@ def recommend_places(share_code: str):
         "team": ["team", "study"],
         "mentoring": ["mentoring", "study"],
     }
-    categories = category_map.get(category, [category])
 
+    categories = category_map.get(category, [category])
     placeholders = ",".join(["?"] * len(categories))
+
     conn = get_conn()
     cur = conn.cursor()
+
     cur.execute(
-        f"SELECT name, category, distance, description FROM places WHERE category IN ({placeholders}) LIMIT 5",
+        f"""
+        SELECT name, category, distance, description
+        FROM places
+        WHERE category IN ({placeholders})
+        LIMIT 5
+        """,
         categories,
     )
+
     rows = cur.fetchall()
     conn.close()
 
